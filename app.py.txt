@@ -1,0 +1,27 @@
+import streamlit as st
+import pandas as pd
+from googleapiclient.discovery import build
+
+# 從 Streamlit Secrets 保險箱讀取設定
+API_KEY = st.secrets["api_key"]
+SPREADSHEET_ID = st.secrets["spreadsheet_id"]
+RANGE_NAME = 'all!C3:E20' # 這是您目前的範圍
+
+def get_data():
+    service = build('sheets', 'v4', developerKey=API_KEY)
+    sheet = service.spreadsheets()
+    result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=RANGE_NAME).execute()
+    return result.get('values', [])
+
+st.title("📊 我的專屬資產戰情室")
+
+try:
+    data = get_data()
+    if data:
+        df = pd.DataFrame(data[1:], columns=data[0])
+        st.success("✅ 雲端連線成功！")
+        st.table(df)
+    else:
+        st.warning("查無數據")
+except Exception as e:
+    st.error(f"發生錯誤：{e}")

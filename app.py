@@ -5,62 +5,53 @@ import plotly.express as px
 # ==========================================
 # 1. 系統設定與金鑰讀取
 # ==========================================
-# 安全讀取 Secrets，避免系統找不到變數
-API_KEY = st.secrets.get("api_key", "") 
-SPREADSHEET_ID = st.secrets.get("spreadsheet_id", "")
+SPREADSHEET_ID = st.secrets.get("spreadsheet_id", "").strip()
 
 # ==========================================
-# 2. 核心功能：無敵防呆抓取資料法
+# 2. 核心功能：動態欄位抓取法
 # ==========================================
 def get_data():
-    # 防呆 1：自動清除 ID 前後不小心複製到的「隱形空白鍵」
-    clean_id = SPREADSHEET_ID.strip()
+    # 使用 gid=0 抓取第一張分頁，不指定 A:B，改為抓取整張表
+    url = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid=0"
     
-    # 防呆 2：使用 gid=0 強制抓取「第一張分頁」，就算分頁名字打錯也能抓到
-    url = f"https://docs.google.com/spreadsheets/d/{clean_id}/export?format=csv&gid=0"
+    # 讀取資料：
+    # 我們不再設定 header=None，改為讓系統自動把第一列當作標題
+    # nrows=14 代表抓取標題後下方的 14 列資料 (總共還是 15 列範圍)
+    df = pd.read_csv(url, nrows=14).fillna(0)
     
-    # 讀取資料，並設定 nrows=15 精準避開第 16 列的「總價」
-    df = pd.read_csv(url, header=None, nrows=15).fillna(0)
-    
-    return df.values.tolist()
+    return df
 
 # ==========================================
 # 3. 戰情室儀表板畫面繪製
 # ==========================================
-# 設定網頁標題與寬版顯示
-st.set_page_config(page_title="千萬資產戰情室", layout="wide")
-st.title("📊 我的專屬資產戰情室")
+st.set_page_config(page_title="千萬資產戰情室-動態版", layout="wide")
+st.title("📊 我的專屬資產戰情室 (動態擴充版)")
 
 try:
-    # 執行資料抓取
-    data = get_data()
+    df_display = get_data()
     
-    if data:
-        # 將資料轉為系統看得懂的表格，並命名欄位
-        df_display = pd.DataFrame(data, columns=["資產項目", "金額"])
-        
-        # 防呆 3：強制將金額欄位轉為純數字，遇到文字或空白自動補 0
-        df_display["金額"] = pd.to_numeric(df_display["金額"], errors='coerce').fillna(0)
-        
-        # 計算總資產
-        total_assets = df_display["金額"].sum()
-        
-        # 顯示最上方的大字報總額
-        col1, col2 = st.columns(2)
-        with col1:
+    if not df_display.empty:
+        # 🛡️ 動態金額辨識：我們假設「金額」那一欄的名字就叫「金額」
+        # 這樣不管您加了多少欄位，只要有一欄叫「金額」，系統就能算總額
+        if "金額" in df_display.columns:
+            df_display["金額"] = pd.to_numeric(df_display["金額"], errors='coerce').fillna(0)
+            total_assets = df_display["金額"].sum()
+            
+            # 顯示總額
             st.metric("目前資產總額", f"NT$ {total_assets:,.0f}")
-        
-        # 畫出華麗的資產配置圓餅圖
-        fig = px.pie(df_display, values='金額', names='資產項目', title='資產配置比例')
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # 顯示下方的明細對帳單
-        st.write("### 📝 資產明細清單")
+            
+            # 畫出圓餅圖 (預設使用第一欄作為名稱，金額欄作為數值)
+            label_col = df_display.columns[0]
+            fig = px.pie(df_display, values='金額', names=label_col, title=f'各項{label_col}配置比例')
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("提醒：請確保試算表第一列有標題，且其中一格名稱為『金額』")
+
+        # 顯示明細清單 (這裏會自動顯示您在 Excel 新增的所有欄位！)
+        st.write("### 📝 資產明細清單 (自動適應多欄位)")
         st.dataframe(df_display, use_container_width=True)
         
 except Exception as e:
-    # 如果還是有錯，會清楚顯示原因，不會讓系統直接當機
-    st.error(f"戰情室連線暫時中斷，請確認網址 ID 是否正確。錯誤細節：{e}")
+    st.error(f"戰情室連線異常，請確認分頁名稱或 ID。細節：{e}")
 
-# 頁尾簽名檔
-st.caption("數據自動對接更新 | 專為 Amy 隊長打造的理財決策系統")
+st.caption("欄位動態同步中 | 專為 Amy 隊長打造的理財決策系統")

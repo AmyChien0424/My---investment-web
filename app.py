@@ -5,7 +5,7 @@ from googleapiclient.discovery import build
 # 從 Streamlit Secrets 保險箱讀取設定
 API_KEY = st.secrets["api_key"]
 SPREADSHEET_ID = st.secrets["spreadsheet_id"]
-RANGE_NAME = 'all' # 這是您目前的範圍
+RANGE_NAME = 'Data' # 這是您目前的範圍
 
 def get_data():
     service = build('sheets', 'v4', developerKey=API_KEY)

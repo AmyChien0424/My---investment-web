@@ -52,4 +52,4 @@ try:
 except Exception as e:
     st.error(f"戰情室連線暫時中斷，請檢查試算表權限。錯誤代碼：{e}")
 
-st.caption("數據每小時自動對接更新 | 專為 Amy 隊長打造的理財決策系統")金
+st.caption("數據每小時自動對接更新 | 專為 Amy 隊長打造的理財決策系統")

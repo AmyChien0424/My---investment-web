@@ -10,7 +10,7 @@ SPREADSHEET_ID = "1lVQm62yr_vy96TmeWYYF13ztS1mh1LoHjbRAeLYcKBc"
 GID = "1762641193"
 
 # --- 🎯 隊長的自由目標設定 (可自行修改) ---
-RETIREMENT_GOAL = 25000000  # 設定目標為 2,500 萬
+RETIREMENT_GOAL = 20000000  # 設定目標為 2,000 萬
 
 # ==========================================
 # 2. 核心功能：清理並讀取數據

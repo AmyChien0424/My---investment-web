@@ -53,7 +53,7 @@ try:
             st.success("恭喜Amy！您已達到自由門檻，隨時可以開除老闆！")
         else:
             remaining = RETIREMENT_GOAL - total_assets
-            st.info(f"距離 2,500 萬自由目標，還差 NT$ {remaining:,.0f}。加油，複利正在為您工作！")
+            st.info(f"距離 2,000 萬自由目標，還差 NT$ {remaining:,.0f}。加油，複利正在為您工作！")
 
         # 頂部數據卡片
         col1, col2 = st.columns(2)

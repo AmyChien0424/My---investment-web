@@ -36,7 +36,7 @@ def get_data():
 # 3. 畫面呈現
 # ==========================================
 st.set_page_config(page_title="Amy 的自由戰情室", layout="wide")
-st.title("🚀 Amy 隊長：自由航行戰情室")
+st.title("🚀 Amy的自由航行戰情室")
 
 try:
     df_display = get_data()
@@ -50,7 +50,7 @@ try:
         
         if progress >= 1.0:
             st.balloons()
-            st.success("恭喜隊長！您已達到自由門檻，隨時可以開除老闆！")
+            st.success("恭喜Amy！您已達到自由門檻，隨時可以開除老闆！")
         else:
             remaining = RETIREMENT_GOAL - total_assets
             st.info(f"距離 2,500 萬自由目標，還差 NT$ {remaining:,.0f}。加油，複利正在為您工作！")

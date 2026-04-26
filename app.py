@@ -8,82 +8,67 @@ import re
 # ==========================================
 SPREADSHEET_ID = "1lVQm62yr_vy96TmeWYYF13ztS1mh1LoHjbRAeLYcKBc"
 GID = "1762641193"
-RETIREMENT_GOAL = 25000000  # 2,500 萬自由目標
+
+# --- 🎯 隊長的自由目標設定 (可自行修改) ---
+RETIREMENT_GOAL = 25000000  # 設定目標為 2,500 萬
 
 # ==========================================
-# 2. 核心功能：數據清洗與進階邏輯
+# 2. 核心功能：清理並讀取數據
 # ==========================================
-def get_processed_data():
+def get_data():
     url = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID}"
-    full_df = pd.read_csv(url).fillna(0)
-    
-    # 數字清理小工具
-    def clean_num(val):
-        if isinstance(val, str):
-            res = re.sub(r'[^\d.-]', '', val)
-            try: return float(res)
-            except: return 0.0
-        return float(val)
-
-    if "金額" in full_df.columns:
-        full_df["金額"] = full_df["金額"].apply(clean_num)
-    
-    first_col = full_df.columns[0]
-    
-    # 提取關鍵特定數據 (不參與圓餅圖加總)
-    annual_dividend = full_df[full_df[first_col].astype(str).str.contains('年股利')]["金額"].sum()
-    loan_amount = abs(full_df[full_df[first_col].astype(str).str.contains('質押借款')]["金額"].sum())
-    pledged_market_value = full_df[full_df[first_col].astype(str).str.contains('質押成本計入')]["金額"].sum()
-    
-    # 排除非資產列 (過濾圓餅圖明細)
-    display_df = full_df[~full_df[first_col].astype(str).str.contains('總|股利|Total|合計')]
-    display_df = display_df[display_df[first_col] != 0]
-    
-    return display_df, annual_dividend, loan_amount, pledged_market_value
+    df = pd.read_csv(url).fillna(0)
+    if not df.empty:
+        def clean_number(value):
+            if isinstance(value, str):
+                clean_val = re.sub(r'[^\d.-]', '', value)
+                try: return float(clean_val)
+                except: return 0.0
+            return float(value)
+        if "金額" in df.columns:
+            df["金額"] = df["金額"].apply(clean_number)
+        first_col = df.columns[0]
+        df = df[~df[first_col].astype(str).str.contains('總|股利|Total|total|合計')]
+        df = df[df[first_col] != 0]
+    return df
 
 # ==========================================
-# 3. 畫面呈現：自由航行儀表板
+# 3. 畫面呈現
 # ==========================================
-st.set_page_config(page_title="Amy 的自由航行儀表板", layout="wide")
-st.title("🚀 Amy 隊長：自由航行戰情室 II")
+st.set_page_config(page_title="Amy的自由戰情室", layout="wide")
+st.title("🚀 Amy 隊長：自由航行戰情室")
 
 try:
-    df, dividend, loan, market_value = get_processed_data()
-    total_assets = df["金額"].sum()
-    
-    # --- 🎯 自由進度條 ---
-    progress = min(total_assets / RETIREMENT_GOAL, 1.0)
-    st.write(f"### 🏁 自由航行進度：{progress*100:.1f}%")
-    st.progress(progress)
-    
-    # --- 📊 核心指標卡片 ---
-    m1, m2, m3 = st.columns(3)
-    m1.metric("目前總資產", f"NT$ {total_assets:,.0f}")
-    m2.metric("每月被動加薪", f"NT$ {dividend/12:,.0f}", help="由年股利換算")
-    
-    # 計算質押維持率
-    if loan > 0:
-        ratio = (market_value / loan) * 100
-        status = "✅ 安全" if ratio > 166 else "⚠️ 注意"
-        m3.metric("質押維持率", f"{ratio:.0f}%", delta=status)
-    else:
-        m3.metric("質押維持率", "N/A (無借款)")
-
-    # --- 📈 視覺化分析 ---
-    st.write("---")
-    col_left, col_right = st.columns([1, 1])
-    
-    with col_left:
-        fig = px.pie(df, values='金額', names=df.columns[0], 
-                     title='資產分佈比例', hole=0.4,
-                     color_discrete_sequence=px.colors.qualitative.Pastel)
-        st.plotly_chart(fig, use_container_width=True)
+    df_display = get_data()
+    if not df_display.empty:
+        total_assets = df_display["金額"].sum()
+        progress = min(total_assets / RETIREMENT_GOAL, 1.0) # 計算進度比率
         
-    with col_right:
-        st.write("### 📝 資產明細清單")
-        st.dataframe(df.style.format({"金額": "{:,.0f}"}), height=400, use_container_width=True)
+        # --- 🌟 退休進度條區塊 ---
+        st.write(f"### 🎯 自由目標達成率：{progress*100:.1f}%")
+        st.progress(progress)
+        
+        if progress >= 1.0:
+            st.balloons()
+            st.success("恭喜Amy！您已達到自由門檻，隨時可以開除老闆！")
+        else:
+            remaining = RETIREMENT_GOAL - total_assets
+            st.info(f"距離 2,500 萬自由目標，還差 NT$ {remaining:,.0f}。加油，複利正在為您工作！")
 
+        # 頂部數據卡片
+        col1, col2 = st.columns(2)
+        col1.metric("目前資產總額", f"NT$ {total_assets:,.0f}")
+        col2.metric("目標金額", f"NT$ {RETIREMENT_GOAL:,.0f}")
+        
+        # 圓餅圖
+        fig = px.pie(df_display, values='金額', names=df_display.columns[0], 
+                     title='資產配置比例', hole=0.4)
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.write("### 📝 即時資產明細")
+        st.dataframe(df_display.style.format({"金額": "{:,.0f}"}), use_container_width=True)
+        
 except Exception as e:
-    st.error(f"系統升級中或連線異常：{e}")
+    st.error(f"連線異常：{e}")
 
-st.caption("數據每小時同步 | 二期工程：自由加速計畫已啟動")
+st.caption("數據同步中 | 投資不是為了賺錢，是為了選擇的自由")

@@ -36,7 +36,7 @@ def get_data():
 # 3. 畫面呈現
 # ==========================================
 st.set_page_config(page_title="Amy的自由戰情室", layout="wide")
-st.title("🚀 Amy 隊長：自由航行戰情室")
+st.title("🚀 Amy的自由航行戰情室")
 
 try:
     df_display = get_data()
